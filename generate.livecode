@@ -1,3 +1,953 @@
 on mouseUp
-   -- add code from the "generate" button here
+   -- [ CLEANING UP ]
+   -- clearing alert field and messages
+   put empty into field "alertfield1"
+   put empty into field "alertfield2"
+   put empty into field "outmessage1"
+   put empty into field "outmessage2"
+   -- more cleaning up to avoid fields that are not replaced
+   put empty into field "people1"
+   put empty into field "people2"
+   -- clearing variables
+   put empty into myname
+   -- as variables: language, p(default), p(dr?)  for better speed and fewer typos in the code
+   put selection of button "langselector" into lang
+   if lang is "German" then put "DE" into shortlang -- needed to acccess correct fields
+   if lang is "French" then put "FR" into shortlang
+   if lang is "Italian" then put "IT" into shortlang
+   -- [ INPUT VALIDATION ]
+   -- check necerssary information is provided so that we can generate the messages
+   put field "objectname" into objectname
+   if objectname is empty then
+      put "Error" into field "alertfield1"
+      put "Error" into field "alertfield2"
+      answer "Invalid input: property name is required."
+      exit mouseup
+   end if
+   put field "thelocation" into thelocation
+   if thelocation is empty then
+      put "Error" into field "alertfield1"
+      put "Error" into field "alertfield2"
+      answer "Invalid input: location is required."
+      exit mouseup
+   end if
+   put field "pdefault" into pdefault
+   put field "pdr" into pdr
+   if pdefault < 0 or pdefault > 1 then -- input validation
+      put "Error" into field "alertfield1"
+      put "Error" into field "alertfield2"
+      answer "Invalid input: probability must be between 0 and 1."
+      put 0.5 into field "pdefault" -- put default value back in
+      exit mouseup
+   end if
+   if pdr < 0 or pdr > 1 then -- input validation
+      put "Error" into field "alertfield1"
+      put "Error" into field "alertfield2"
+      answer "Invalid input: probability must be between 0 and 1."
+      put 0.5 into field "pdr" -- put default value back in
+      exit mouseup
+   end if
+   -- [ GENERATING HOW MANY PEOPLE WILL LIVE IN THE PROPERTY ]
+   -- room to people; fields only for accessibility
+   put field "rooms" into rooms
+   if rooms < 1 or rooms > 6 then -- input validation
+      put "Error" into field "alertfield1"
+      put "Error" into field "alertfield2"
+      answer "Invalid input: number of rooms must be between 1 and 6. Check if the room number is valid or skip property."
+      put empty into field "rooms"
+      exit mouseup
+   end if
+   if rooms is not among the words of "1 1.5 2 2.5 3 3.5 4 4.5 5 5.5 6" then -- input validation
+      put "Error" into field "alertfield1"
+      put "Error" into field "alertfield2"
+      answer "Invalid input: number of rooms must be between 1 and 6, with 1.5 etc. allowed. Check if there is no trailing space."
+      put empty into field "rooms"
+      exit mouseup
+   end if
+   if rooms is 1 or rooms is 1.5 or rooms is 2 then -- 1 person; using separate if/then for readability
+      put 1 into field "people1"
+      put 1 into field "people2"
+   end if
+   if rooms is 2.5 or rooms is 3 then -- 1 or 2 people
+      put random(2) into field "people1"
+      put random(2) into field "people2"
+   end if
+   if rooms is 3.5 or rooms is 4 then -- 2 or 3 people
+      put 1+random(2) into field "people1"
+      put 1+random(2) into field "people2"
+   end if
+   if rooms is 4.5 or rooms is 5 then -- 3 or 4 people
+      put 2+random(2) into field "people1"
+      put 2+random(2) into field "people2"
+   end if
+   if rooms is 5.5 or rooms is 6 then -- 4 people
+      put 4 into field "people1"
+      put 4 into field "people2"
+   end if
+   if field "people1" is 1 then 
+      put "Single" into field "type1"  -- human readable what this means
+      put 0 into field "kids1"
+   end if
+   if field "people1" is 2 then 
+      put "Couple" into field "type1"
+      put 0 into field "kids1"
+   end if
+   if field "people1" >= 3 then 
+      put "Family" into field "type1"
+      put field "people1" - 2 into field "kids1"
+   end if
+   if field "people2" is 1 then 
+      put "Single" into field "type2"
+      put 0 into field "kids2"
+   end if
+   if field "people2" is 2 then 
+      put "Couple" into field "type2"
+      put 0 into field "kids2"
+   end if
+   if field "people2" >= 3 then 
+      put "Family" into field "type2"
+      put field "people2" - 2 into field "kids2"
+   end if
+   put field "people1" into people1 -- variable
+   put field "people2" into people2 -- variable
+   put field "kids1" into kids1 -- variable
+   put field "kids2" into kids2 -- variable
+   -- [ GENERATING INCOME]
+   put field "rentinadvert" into rent
+   put 2.5 into rentkfactor
+   if rent is empty then
+      -- no rent is specified, no income is calculated
+      put "NA" into field "income1"
+      put "NA" into field "income2"
+   else
+      -- first person:
+      put random(50)/100 into randfactor
+      put rentkfactor + randfactor into multifactor
+      put round(rent/100 *multifactor)*100 into field "income1"
+      --  if field "joblevel1" is "low" then put field "income1" + 500 into field "income1"
+      --  if field "joblevel1" is "high" then put field "income1" + 1000 into field "income1"
+      -- second person:
+      put field "income1" into field "income2"
+      repeat while field "income1" is field "income2"
+         put random(50)/100 into randfactor
+         put rentkfactor + randfactor into multifactor
+         put round(rent/100 *multifactor)*100 into field "income2"
+         -- if field "joblevel2" is "low" then put field "income2" + 500 into field "income2"
+         -- if field "joblevel2" is "high" then put field "income2" + 1000 into field "income2"
+      end repeat
+      repeat while field "income1" < 3000
+         put round((field "income1" / 100)) * 110 into field "income1" -- increase by 10%
+      end repeat
+      repeat while field "income2" < 3000
+         put round((field "income2" / 100)) * 110 into field "income2" -- increase by 10%
+      end repeat
+   end if
+   -- [ GENERATING ORIGIN OF APPLICANT ]
+   -- random origin: one is Swiss, the other is one of the three 'foreigners'
+   if random(2) = 1 then
+      -- profile 1 is Swiss
+      put "Swiss" into field "origin1"
+      put empty into field "permit1"
+      put  line random(3)+1 of field "nationalityfield" of card "Details" into field "origin2"
+      if field "origin2" is "Neighbour" then put lang into field "origin2"  -- depends on language which neighbour country is chosen
+      put line random(2) of field "permitfield" of card "Details" into field "permit2" -- only for non-Swiss origin
+   else
+      -- profile 2 is Swiss
+      put "Swiss" into field "origin2"
+      put empty into field "permit2"
+      put  line random(3)+1 of field "nationalityfield" of card "Details" into field "origin1"
+      if field "origin1" is "Neighbour" then put lang into field "origin1" -- depends on language which neighbour country is chosen
+      put line random(2) of field "permitfield" of card "Details" into field "permit1"
+   end if
+   put field "origin1" into origin1 -- variable
+   put field "origin2" into origin2 -- variable
+   put field "permit1" into permit1 -- variable
+   put field "permit2" into permit2 -- variable
+   -- [ GENERATING GENDER ]
+   if random (2) is 1 then
+      put "female" into field "gender1"
+   else
+      put "male" into field "gender1"
+   end if
+   if random(2) is 1 then
+      put "female" into field "gender2"
+   else
+      put "male" into field "gender2"
+   end if
+   put field "gender1" into gender1 -- variable
+   put field "gender2" into gender2 -- variable
+   -- [ GENERATING NAME ]
+   -- random name, based on language and gender; include matching e-mail
+   put empty into field "name1"
+   put empty into field "namefam1"
+   put empty into field "name2"
+   put empty into field "namefam2"
+   if lang is "German" then
+      if field "origin1" is "Swiss" then
+         if field "gender1" is "female" then -- female
+            put line random(6) of field "name_f_chde" of card "Names" into field "name1"
+         else -- male
+            put line random(6) of field "name_m_chde" of card "Names" into field "name1"
+         end if
+         put random(6) into rvar
+         put line rvar of field "name_y_chde" of card "Names" into field "namefam1"
+         put line rvar of field "mail_chde" of card "Names" into field "email1"
+      end if
+      if field "origin1" is "Kosovo" then
+         if field "gender1" is "female" then
+            put line random(6) of field "name_f_kv" of card "Names" into field "name1"
+         else -- male
+            put line random(6) of field "name_m_kv" of card "Names" into field "name1"
+         end if
+         put random(6) into rvar
+         put line rvar of field "name_y_kv" of card "Names" into field "namefam1"
+         put line rvar of field "mail_kv" of card "Names" into field "email1"
+      end if
+      if field "origin1" is "German" then
+         if field "gender1" is "female" then
+            put line random(6) of field "name_f_de" of card "Names" into field "name1"
+         else -- male
+            put line random(6) of field "name_m_de" of card "Names" into field "name1"
+         end if
+         put random(6) into rvar
+         put line rvar of field "name_y_de" of card "Names" into field "namefam1"
+         put line rvar of field "mail_de" of card "Names" into field "email1"
+      end if
+      if field "origin1" is "Turkish" then
+         if field "gender1" is "female" then
+            put line random(6) of field "name_f_tr" of card "Names" into field "name1"
+         else -- male
+            put line random(6) of field "name_m_tr" of card "Names" into field "name1"
+         end if
+         put random(12) into rvar -- 12 because of the accented variations
+         put line rvar of field "name_y_tr" of card "Names" into field "namefam1"
+         put line rvar of field "mail_tr" of card "Names" into field "email1"
+      end if
+      -- name 2
+      if field "origin2" is "Swiss" then
+         if field "gender2" is "female" then
+            put line random(6) of field "name_f_chde" of card "Names" into field "name2"
+         else -- male
+            put line random(6) of field "name_m_chde" of card "Names" into field "name2"
+         end if
+         put random(6) into rvar
+         put line rvar of field "name_y_chde" of card "Names" into field "namefam2"
+         put line rvar of field "mail_chde" of card "Names" into field "email2"
+      end if
+      if field "origin2" is "Kosovo" then
+         if field "gender2" is "female" then
+            put line random(6) of field "name_f_kv" of card "Names" into field "name2"
+         else -- male
+            put line random(6) of field "name_m_kv" of card "Names" into field "name2"
+         end if
+         put random(6) into rvar
+         put line rvar of field "name_y_kv" of card "Names" into field "namefam2"
+         put line rvar of field "mail_kv" of card "Names" into field "email2"
+      end if
+      if field "origin2" is "German" then
+         if field "gender2" is "female" then
+            put line random(6) of field "name_f_de" of card "Names" into field "name2"
+         else -- male
+            put line random(6) of field "name_m_de" of card "Names" into field "name2"
+         end if
+         put random(6) into rvar
+         put line rvar of field "name_y_de" of card "Names" into field "namefam2"
+         put line rvar of field "mail_de" of card "Names" into field "email2"
+      end if
+      if field "origin2" is "Turkish" then
+         if field "gender2" is "female" then
+            put line random(6) of field "name_f_tr" of card "Names" into field "name2"
+         else -- male
+            put line random(6) of field "name_m_tr" of card "Names" into field "name2"
+         end if
+         put random(12) into rvar  -- 12 because of the accented versions
+         put line rvar of field "name_y_tr" of card "Names" into field "namefam2"
+         put line rvar of field "mail_tr" of card "Names" into field "email2"
+      end if
+   end if
+   if lang is "French" then
+      -- French case
+      if field "origin1" is "Swiss" then
+         if field "gender1" is "female" then -- female
+            put line random(6) of field "name_f_chfr" of card "Names" into field "name1"
+         else -- male
+            put line random(6) of field "name_m_chfr" of card "Names" into field "name1"
+         end if
+         put random(6) into rvar -- 6 is the number of names we have; could be changed to a variable depending on the number of lines in the field
+         put line rvar of field "name_y_chfr" of card "Names" into field "namefam1"
+         put line rvar of field "mail_chfr" of card "Names" into field "email1"
+      end if
+      if field "origin1" is "Kosovo" then
+         if field "gender1" is "female" then
+            put line random(6) of field "name_f_kv" of card "Names" into field "name1"
+         else -- male
+            put line random(6) of field "name_m_kv" of card "Names" into field "name1"
+         end if
+         put random(6) into rvar
+         put line rvar of field "name_y_kv" of card "Names" into field "namefam1"
+         put line rvar of field "mail_kv" of card "Names" into field "email1"
+      end if
+      if field "origin1" is "French" then
+         if field "gender1" is "female" then
+            put line random(6) of field "name_f_fr" of card "Names" into field "name1"
+         else -- male
+            put line random(6) of field "name_m_fr" of card "Names" into field "name1"
+         end if
+         put random(6) into rvar
+         put line rvar of field "name_y_fr" of card "Names" into field "namefam1"
+         put line rvar of field "mail_fr" of card "Names" into field "email1"
+      end if
+      if field "origin1" is "Turkish" then
+         if field "gender1" is "female" then
+            put line random(6) of field "name_f_tr" of card "Names" into field "name1"
+         else -- male
+            put line random(6) of field "name_m_tr" of card "Names" into field "name1"
+         end if
+         put random(12) into rvar -- 12 because of the accented variations
+         put line rvar of field "name_y_tr" of card "Names" into field "namefam1"
+         put line rvar of field "mail_tr" of card "Names" into field "email1"
+      end if
+      -- name 2
+      if field "origin2" is "Swiss" then
+         if field "gender2" is "female" then
+            put line random(6) of field "name_f_chfr" of card "Names" into field "name2"
+         else -- male
+            put line random(6) of field "name_m_chfr" of card "Names" into field "name2"
+         end if
+         put random(6) into rvar
+         put line rvar of field "name_y_chfr" of card "Names" into field "namefam2"
+         put line rvar of field "mail_chfr" of card "Names" into field "email2"
+      end if
+      if field "origin2" is "Kosovo" then
+         if field "gender2" is "female" then
+            put line random(6) of field "name_f_kv" of card "Names" into field "name2"
+         else -- male
+            put line random(6) of field "name_m_kv" of card "Names" into field "name2"
+         end if
+         put random(6) into rvar
+         put line rvar of field "name_y_kv" of card "Names" into field "namefam2"
+         put line rvar of field "mail_kv" of card "Names" into field "email2"
+      end if
+      if field "origin2" is "French" then
+         if field "gender2" is "female" then
+            put line random(6) of field "name_f_fr" of card "Names" into field "name2"
+         else -- male
+            put line random(6) of field "name_m_fr" of card "Names" into field "name2"
+         end if
+         put random(6) into rvar
+         put line rvar of field "name_y_fr" of card "Names" into field "namefam2"
+         put line rvar of field "mail_fr" of card "Names" into field "email2"
+      end if
+      if field "origin2" is "Turkish" then
+         if field "gender2" is "female" then
+            put line random(6) of field "name_f_tr" of card "Names" into field "name2"
+         else -- male
+            put line random(6) of field "name_m_tr" of card "Names" into field "name2"
+         end if
+         put random(12) into rvar  -- 12 because of the accented versions
+         put line rvar of field "name_y_tr" of card "Names" into field "namefam2"
+         put line rvar of field "mail_tr" of card "Names" into field "email2"
+      end if
+   end if
+   -- XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+   if lang is "Italian" then
+      -- Italian case
+      if field "origin1" is "Swiss" then
+         if field "gender1" is "female" then -- female
+            put line random(6) of field "name_f_chit" of card "Names" into field "name1"
+         else -- male
+            put line random(6) of field "name_m_chit" of card "Names" into field "name1"
+         end if
+         put random(6) into rvar
+         put line rvar of field "name_y_chit" of card "Names" into field "namefam1"
+         put line rvar of field "mail_chit" of card "Names" into field "email1"
+      end if
+      if field "origin1" is "Kosovo" then
+         if field "gender1" is "female" then
+            put line random(6) of field "name_f_kv" of card "Names" into field "name1"
+         else -- male
+            put line random(6) of field "name_m_kv" of card "Names" into field "name1"
+         end if
+         put random(6) into rvar
+         put line rvar of field "name_y_kv" of card "Names" into field "namefam1"
+         put line rvar of field "mail_kv" of card "Names" into field "email1"
+      end if
+      if field "origin1" is "Italian" then
+         if field "gender1" is "female" then
+            put line random(6) of field "name_f_it" of card "Names" into field "name1"
+         else -- male
+            put line random(6) of field "name_m_it" of card "Names" into field "name1"
+         end if
+         put random(6) into rvar
+         put line rvar of field "name_y_it" of card "Names" into field "namefam1"
+         put line rvar of field "mail_it" of card "Names" into field "email1"
+      end if
+      if field "origin1" is "Turkish" then
+         if field "gender1" is "female" then
+            put line random(6) of field "name_f_tr" of card "Names" into field "name1"
+         else -- male
+            put line random(6) of field "name_m_tr" of card "Names" into field "name1"
+         end if
+         put random(12) into rvar -- 12 because of the accented variations
+         put line rvar of field "name_y_tr" of card "Names" into field "namefam1"
+         put line rvar of field "mail_tr" of card "Names" into field "email1"
+      end if
+      -- name 2
+      if field "origin2" is "Swiss" then
+         if field "gender2" is "female" then
+            put line random(6) of field "name_f_chit" of card "Names" into field "name2"
+         else -- male
+            put line random(6) of field "name_m_chit" of card "Names" into field "name2"
+         end if
+         put random(6) into rvar
+         put line rvar of field "name_y_chit" of card "Names" into field "namefam2"
+         put line rvar of field "mail_chit" of card "Names" into field "email2"
+      end if
+      if field "origin2" is "Kosovo" then
+         if field "gender2" is "female" then
+            put line random(6) of field "name_f_kv" of card "Names" into field "name2"
+         else -- male
+            put line random(6) of field "name_m_kv" of card "Names" into field "name2"
+         end if
+         put random(6) into rvar
+         put line rvar of field "name_y_kv" of card "Names" into field "namefam2"
+         put line rvar of field "mail_kv" of card "Names" into field "email2"
+      end if
+      if field "origin2" is "Italian" then
+         if field "gender2" is "female" then
+            put line random(6) of field "name_f_it" of card "Names" into field "name2"
+         else -- male
+            put line random(6) of field "name_m_it" of card "Names" into field "name2"
+         end if
+         put random(6) into rvar
+         put line rvar of field "name_y_it" of card "Names" into field "namefam2"
+         put line rvar of field "mail_it" of card "Names" into field "email2"
+      end if
+      if field "origin2" is "Turkish" then
+         if field "gender2" is "female" then
+            put line random(6) of field "name_f_tr" of card "Names" into field "name2"
+         else -- male
+            put line random(6) of field "name_m_tr" of card "Names" into field "name2"
+         end if
+         put random(12) into rvar  -- 12 because of the accented versions
+         put line rvar of field "name_y_tr" of card "Names" into field "namefam2"
+         put line rvar of field "mail_tr" of card "Names" into field "email2"
+      end if
+   end if
+   -- XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+   -- [ GENERATING JOB ]
+   -- define variables so that we can compare below; they will be overwritten with the correct (random) job
+   put -1 into rhi1
+   put -1 into rlo1
+   -- JOB 1:
+   if random (2) is 1 then -- highly qualified
+      put "high" into field "joblevel1"
+      put random(5) into rhi1
+      if gender1 is "male" then put line rhi1 in field ("jobfield"& shortlang&"hiM") on card "Details" into field "job1"
+      if gender1 is "female" then put line rhi1 in field ("jobfield"& shortlang&"hiF") on card "Details" into field "job1"
+      if random(10000)/10000 < pdr then -- is a Dr?
+         if lang is "German" then 
+            put "Dr. " into field "dr1" -- space at the end needed _here_ to combine it with the name, and there is no space if the string is empty
+         end if
+         if lang is "French" then
+            put "Dr. " into field "dr1"
+         end if
+         if lang is "Italian" then 
+            if gender1 is "female" then -- different strings for male and female
+               put "Dr. ssa " into field "dr1"
+            else -- male
+               put "Dr. " into field "dr1"
+            end if
+         end if
+      else
+         put empty into field "dr1"
+      end if
+   else -- low skilled
+      put "low" into field "joblevel1"
+      put random(5) into rlo1
+      if gender1 is "male" then put line rlo1 in field ("jobfield"& shortlang&"loM") on card "Details" into field "job1"
+      if gender1 is "female" then put line rlo1 in field ("jobfield"& shortlang&"loF") on card "Details" into field "job1"
+      put empty into field "dr1"
+   end if
+   -- JOB 2
+   if random(2) is 1 then -- highly qualified, job 2
+      put "high" into field "joblevel2"
+      put random(5) into rhi2
+      -- check here rhi1 neq rh2 using while
+      repeat while rhi1  is rhi2 
+         put random(5) into rhi2 -- choose a different job 2
+      end repeat
+      if gender2 is "male" then put line rhi2 in field ("jobfield"& shortlang&"hiM") on card "Details" into field "job2"
+      if gender2 is "female" then put line rhi2 in field ("jobfield"& shortlang&"hiF") on card "Details" into field "job2"
+      if random(10000)/10000 < pdr then -- dr?
+         if lang is "German" then 
+            put "Dr. " into field "dr2"
+         end if
+         if lang is "French" then
+            put "Dr. " into field "dr2"
+         end if
+         if lang is "Italian" then 
+            if gender2 is "female" then -- different strings for male and female
+               put "Dr. ssa " into field "dr2"
+            else -- male
+               put "Dr. " into field "dr2"
+            end if
+         end if
+      else
+         put empty into field "dr2"
+      end if
+   else
+      put "low" into field "joblevel2"
+      put random(5) into rlo2
+      -- check here rlo1 neq rlo2 using while
+      repeat while rlo1  is rlo2 
+         put random(5) into rlo2 -- choose a different job 2
+      end repeat
+      if gender2 is "male" then put line rlo2 in field ("jobfield"& shortlang&"loM") on card "Details" into field "job2"
+      if gender2 is "female" then put line rlo2 in field ("jobfield"& shortlang&"loF") on card "Details" into field "job2"
+      put empty into field "dr2"
+   end if
+   -- [ GENERATING AGE ]
+   -- random age, two ranges
+   if random (2) is 1 then
+      put 26 + random(3) into field "age1" -- young
+   else
+      put 41 + random(3) into field "age1" -- old
+   end if
+   if random(2) is 1 then
+      put 26 + random(3) into field "age2" -- young
+   else
+      put 41 + random(3) into field "age2" -- old
+   end if
+   -- checking they have different age ¦ 0202
+   if field "age1" is field "age2" then
+      if random(2) is 1 then
+         put 1 into diffvar -- add 1 year
+      else
+         put -1 into diffvar -- remove 1 year
+      end if
+      put field "age2" + diffvar into field "age2"
+   end if
+   -- [ GENERATING CONTACT DETAILS ]
+   -- random address and telephone number; this is 'brute force' and could be changed to use the fields dynamically with the short language string
+   if lang is "German" then
+      if random(2) is 1 then
+         put field "telDE_a" on card "Addresses" into field "phone1"
+         put field "telDE_b" on card "Addresses" into field "phone2"
+      else
+         put field "telDE_a" on card "Addresses" into field "phone2"
+         put field "telDE_b" on card "Addresses" into field "phone1"
+      end if
+      if random(2) is 1 then
+         put field "adrDE_a" on card "Addresses" into field "address1"
+         put field "adrDE_b" on card "Addresses" into field "address2"
+      else
+         put field "adrDE_a" on card "Addresses" into field "address2"
+         put field "adrDE_b" on card "Addresses" into field "address1"
+      end if
+   end if
+   if lang is "French" then
+      if random(2) is 1 then
+         put field "telFR_a" on card "Addresses" into field "phone1"
+         put field "telFR_b" on card "Addresses" into field "phone2"
+      else
+         put field "telFR_a" on card "Addresses" into field "phone2"
+         put field "telFR_b" on card "Addresses" into field "phone1"
+      end if
+      if random(2) is 1 then
+         put field "adrFR_a" on card "Addresses" into field "address1"
+         put field "adrFR_b" on card "Addresses" into field "address2"
+      else
+         put field "adrFR_a" on card "Addresses" into field "address2"
+         put field "adrFR_b" on card "Addresses" into field "address1"
+      end if
+   end if
+   if lang is "Italian" then
+      if random(2) is 1 then
+         put field "telIT_a" on card "Addresses" into field "phone1"
+         put field "telIT_b" on card "Addresses" into field "phone2"
+      else
+         put field "telIT_a" on card "Addresses" into field "phone2"
+         put field "telIT_b" on card "Addresses" into field "phone1"
+      end if
+      if random(2) is 1 then
+         put field "adrIT_a" on card "Addresses" into field "address1"
+         put field "adrIT_b" on card "Addresses" into field "address2"
+      else
+         put field "adrIT_a" on card "Addresses" into field "address2"
+         put field "adrIT_b" on card "Addresses" into field "address1"
+      end if
+   end if
+   -- [ WHICH TEMPLATE TO USE? ]
+   -- randomizing template
+   put random(10000)/10000 into rdefault -- using default message?
+   put rdefault into field "pcurrent"
+   -- which template?
+   put random(2) into rwhichdetailed -- which detailed message template?
+   if rdefault < pdefault then  -- default message to send
+      -- XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX DEFAULT MESSAGE
+      put "Send default message" into field "alertfield1" -- irrespective of language
+      put "Send default message" into field "alertfield2"
+      if lang is "German" then -- German default message
+         do field "defaultDE" on card "Default Messages"
+         put themessage into field "outmessage1"
+         put themessage into field "outmessage2"
+         put "default" into field "template1"
+         put "default" into field "template2"
+      end if
+      if lang is "French" then -- French default messages
+         if gender1 is "Male" then -- French male default message for applicant 1
+            do field "defaultFR_m" on card "Default Messages"
+            put themessage into field "outmessage1"
+            put "default" into field "template1"
+         else -- French female
+            do field "defaultFR_f" on card "Default Messages"
+            put themessage into field "outmessage1"
+            put "default" into field "template1"
+         end if
+         if gender2 is "Male" then -- French male default message for applicant 2
+            do field "defaultFR_m" on card "Default Messages"
+            put themessage into field "outmessage2"
+            put "default" into field "template2"
+         else -- French female
+            do field "defaultFR_f" on card "Default Messages"
+            put themessage into field "outmessage2"
+            put "default" into field "template2"
+         end if
+      end if
+      if lang is "Italian" then  -- Italian default message
+         do field "defaultIT" on card "Default Messages"
+         put themessage into field "outmessage1"
+         put themessage into field "outmessage2"
+         put "default" into field "template1"
+         put "default" into field "template2"
+      end if
+   else   -- detailed message to send
+      -- XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX DETAILED MESSAGE
+      -- application 1
+      -- XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+      put field "age1" into myage
+      put field "job1" into myjob
+      put field "name1" && field "namefam1" into myname
+      put field "permit1" into mypermitEN -- can be: empty, "Swiss", "Permit C"
+      -- permitstrings
+      -- using a 'brute force' approach here to have readable code
+      if mypermitEN is empty then -- Swiss applicant; irrespective of language ¦ 0130 moved up
+         put empty into mypermitstring
+         put empty into mypermitstringund
+         put empty into mypermitstringcomma
+         put "und " into myund -- for German | 02/02
+         put "Sto" into mypermitstringundcap -- only for Italian
+      end if
+      if lang is "German" then
+         if mypermit is not empty then -- not a Swiss applicant
+            put "" into myund
+         end if
+         if gender1 is "female" and mypermitEN is "Swiss" then -- female Swiss
+            put "bin Schweizerin" into mypermit
+         end if
+         if gender1 is "male" and mypermitEN is "Swiss" then -- male Swss
+            put "bin Schweizer" into mypermit
+         end if
+         if mypermitEN is "Permit C" then -- irrespective of gender
+            put "habe einen Ausweis C" into mypermit
+         end if
+         put " und" && mypermit into mypermitstring -- space in front required so that this plays nicely with empty string
+         put ", und" && mypermit into mypermitstringcomma
+         put "," && mypermit into mypermitshortcomma -- | 20/2
+         put " " & mypermit && "und" into mypermitstringund
+         if mypermitEN is "" then -- Swiss without details ¦ 0130
+            put empty into mypermitstring
+            put empty into mypermitstringcomma
+            put empty into mypermitstringund
+            put empty into mypermitshortcomma -- | 20/2
+         end if
+      end if
+      if lang is "French" then
+         -- optional "et" for nicer flow: Swiss (without indication)
+         put " et" into et1
+         put "" into et2
+         -- foreign origin:
+         if  mypermitEN is "Swiss" then -- irrespective of gender
+            put "je suis de nationalité suisse" into mypermit 
+            put "Je suis de nationalité suisse" into mypermitCAP -- ¦ added  0130
+            put "," into et1
+            put " et" into et2
+         end if
+         if mypermitEN is "Permit C" then -- irrespective of gender
+            if random(2) is 1 then
+               -- random variation with equal chances
+               put "je détiens un permis C" into mypermit
+               put "Je détiens un permis C" into mypermitCAP
+            else
+               put "j'ai un permis C" into mypermit
+               put "J'ai un permis C" into mypermitCAP
+            end if
+            put "," into et1
+            put " et" into et2
+         end if
+         put " et" && mypermit into mypermitstring -- space in front required so that this plays nicely with empty string
+         put "," && mypermit into mypermitstringcomma
+         put mypermitCAP && "et je suis" into mypermitstringund -- | added "je suis" 0202; removed extra space 20/2
+         if origin1 is "Swiss" then -- Swiss without details | 0130
+            put empty into mypermitstring
+            put empty into mypermitstringcomma
+            put "Je suis" into mypermitstringund
+            put " et" into et1
+            put empty into et2
+         end if
+      end if
+      if lang is "Italian" then
+         if gender1 is "female" and mypermitEN is "Swiss" then -- female Swiss
+            put "sono svizzera" into mypermit
+         end if
+         if gender1 is "male" and mypermitEN is "Swiss" then -- male Swss
+            put "sono svizzero" into mypermit
+         end if
+         if mypermitEN is "Permit C" then -- irrespective of gender
+            put "ho un permesso C" into mypermit
+         end if
+         put " e" && mypermit into mypermitstring -- space in front required so that this plays nicely with empty string
+         put "," && mypermit into mypermitstringcomma
+         put " " & mypermit && "e" into mypermitstringund
+         put mypermit into mypermitcap -- capitalize
+         if first word of mypermit is "sono" then
+            put "Sono" into first word of mypermitcap
+         end if
+         if first word of mypermit is "ho" then
+            put "Ho" into first word of mypermitcap
+         end if
+         put " " & mypermitcap && "e sto" into mypermitstringundcap -- only Italian
+         if mypermitEN is "" then -- Swiss without details | 20/2
+            put empty into mypermitstring
+            put empty into mypermitstringcomma
+            put empty into mypermitstringund
+            put empty into mypermitcap
+            put " Sto" into mypermitstringundcap
+         end if
+      end if
+      put field "dr1" into mydrstring
+      if lang is "German" then
+         if field "kids1" is 1 then 
+            put "einem Kind" into mykidsstring
+            put "unser Kind" into mykidsour --| added 20/2
+         else
+            put field "kids1" && "Kindern" into mykidsstring
+            put "unsere Kinder" into mykidsour --| added 20/2
+         end if
+      end if
+      if lang is "French" then
+         if field "kids1" is 1 then 
+            put "un enfant" into mykidsstring
+            put "notre enfant" into mykidsour --| added 20/2
+         else
+            put field "kids1" && "enfants" into mykidsstring
+            put "nos enfants" into mykidsour --| added 20/2
+         end if
+      end if
+      if lang is "Italian" then
+         if field "kids1" is 1 then
+            if random(2) is 1 then 
+               -- equal chances of having a son or a daughter; no universal equivalent
+               put "un figlio" into mykidsstring
+               put "nostro figlio" into mykidsour -- | added 20/2
+            else
+               put "una figlia" into mykidsstring
+               put "nostra figlia" into mykidsour --| added 20/2
+            end if
+         else
+            put field "kids1" && "di figli" into mykidsstring
+            put "i nostri figli" into mykidsour --| added 20/2
+         end if
+      end if
+      -- which template to use?
+      -- Step 1: 1 out of 6 templates are randomly chosen
+      put random(6) into tnum1
+      put random(6) into tnum2
+      -- we don't want the templates to be the same (tnum1 = tnum2), and we don't want the templates to be from the same level
+      -- i.e. we want to exclude 1,2 and 3,4 and 5,6 as combinations
+      repeat while (tnum1 is tnum2) or (tnum1=1 and tnum2=2) or (tnum1=3 and tnum2=4) or (tnum1=5 and tnum2=6) or (tnum1=2 and tnum2=1) or (tnum1=4 and tnum2=3) or (tnum1=6 and tnum2=5)
+         put random(6) into tnum2 -- keep trying until it is different and acceptable
+      end repeat
+      -- Step 2: sing, coup, or fam
+      if field "type1" is "Single" then put "sing" into ttyp1
+      if field "type1" is "Couple" then put "coup" into ttyp1
+      if field "type1" is "Family" then put "fam" into ttyp1
+      if field "type2" is "Single" then put "sing" into ttyp2
+      if field "type2" is "Couple" then put "coup" into ttyp2
+      if field "type2" is "Family" then put "fam" into ttyp2
+      -- Step 3: M or F
+      if field "gender1" is "female" then put "F" into tgen1
+      if field "gender2" is "female" then put "F" into tgen2
+      if field "gender1" is "male" then put "M" into tgen1
+      if field "gender2" is "male" then put "M" into tgen2
+      -- Step 4: put everything together
+      put tnum1 & ttyp1 & tgen1 into template1
+      put tnum2 & ttyp2 & tgen2 into template2
+      put template1  into field "template1"
+      put template2 into field "template2"
+      if lang is "German" then
+         do field("T"&template1) on card "Templates DE"
+      end if
+      if lang is "French" then
+         do field("T"&template1) on card "Templates FR"
+      end if
+      if lang is "Italian" then
+         do field("T"&template1) on card "Templates IT"
+      end if
+      put themessage into field "outmessage1"
+      -- application 2
+      -- XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+      put field "age2" into myage
+      put field "job2" into myjob
+      put field "name2" && field "namefam2" into myname
+      put field "permit2" into mypermitEN -- can be: empty, "Swiss", "Permit C"
+      -- permitstrings
+      if mypermitEN is empty then -- Swiss applicant; irrespective of language ¦ 0130 moved up; so I can overwrite this below for each language if needed
+         put empty into mypermitstring
+         put empty into mypermitstringund
+         put empty into mypermitstringcomma
+         put "und " into myund -- for German | 0202
+         put "Sto" into mypermitstringundcap -- only for Italian
+      end if
+      if lang is "German" then
+         if mypermit is not empty then -- not a Swiss applicant
+            put "" into myund
+         end if
+         if gender2 is "female" and mypermitEN is "Swiss" then -- female Swiss
+            put "bin Schweizerin" into mypermit
+         end if
+         if gender2 is "male" and mypermitEN is "Swiss" then -- male Swss
+            put "bin Schweizer" into mypermit
+         end if
+         if mypermitEN is "Permit C" then -- irrespective of gender
+            put "habe einen Ausweis C" into mypermit
+         end if
+         put " und" && mypermit into mypermitstring -- space in front required so that this plays nicely with empty string
+         put ", und" && mypermit into mypermitstringcomma
+         put "," && mypermit into mypermitshortcomma -- | 20/2
+         put " " & mypermit && "und" into mypermitstringund
+         if mypermitEN is "" then -- Swiss without details ¦ 0130
+            put empty into mypermitstring
+            put empty into mypermitstringcomma
+            put empty into mypermitshortcomma -- | 20/2
+            put empty into mypermitstringund
+         end if
+      end if
+      if lang is "French" then
+         -- Swiss (empty) first:
+         put " et" into et1
+         put "" into et2
+         -- foreign origin:
+         if  mypermitEN is "Swiss" then -- irrespective of gender
+            put "suis de nationalité suisse" into mypermit
+            put "Je suis de nationalité suisse" into mypermitCAP
+            put "," into et1
+            put " et" into et2
+         end if
+         if mypermitEN is "Permit C" then -- irrespective of gender
+            if random(2) is 1 then
+               -- random variation with equal chances
+               put "je détiens un permis C" into mypermit
+               put "Je détiens un permis C" into mypermitCAP
+            else
+               put "j'ai un permis C" into mypermit
+               put "J'ai un permis C" into mypermitCAP
+            end if
+            put "," into et1
+            put " et" into et2
+         end if
+         put " et" && mypermit into mypermitstring -- space in front required so that this plays nicely with empty string
+         put "," && mypermit into mypermitstringcomma
+         put mypermitCAP && "et je suis" into mypermitstringund --| removed extra space 20/2
+         if origin2 is "Swiss" then -- Swiss without details ¦ 0130
+            put empty into mypermitstring
+            put empty into mypermitstringcomma
+            put "Je suis" into mypermitstringund
+            put " et" into et1
+            put empty into et2
+         end if
+      end if
+      if lang is "Italian" then
+         if gender2 is "female" and mypermitEN is "Swiss" then -- female Swiss
+            put "sono svizzera" into mypermit
+         end if
+         if gender2 is "male" and mypermitEN is "Swiss" then -- male Swss
+            put "sono svizzero" into mypermit
+         end if
+         if mypermitEN is "Permit C" then -- irrespective of gender
+            put "ho un permesso C" into mypermit
+         end if
+         put " e" && mypermit into mypermitstring -- space in front required so that this plays nicely with empty string
+         put "," && mypermit into mypermitstringcomma
+         put " " & mypermit && "e" into mypermitstringund
+         put mypermit into mypermitcap -- capitalize
+         if first word of mypermit is "sono" then
+            put "Sono" into first word of mypermitcap
+         end if
+         if first word of mypermit is "ho" then
+            put "Ho" into first word of mypermitcap
+         end if
+         put " " & mypermitcap && "e sto" into mypermitstringundcap -- only Italian
+         if mypermitEN is "" then -- Swiss without details | 20/2
+            put empty into mypermitstring
+            put empty into mypermitstringcomma
+            put empty into mypermitstringund
+            put empty into mypermitcap
+            put " Sto" into mypermitstringundcap -- |2/20
+         end if
+      end if
+      put field "dr2" into mydrstring
+      if lang is "German" then
+         if field "kids2" is 1 then 
+            put "einem Kind" into mykidsstring
+            put "unser Kind" into mykidsour --| added 20/2
+         else
+            put field "kids2" && "Kindern" into mykidsstring
+            put "unsere Kinder" into mykidsour --| added 20/2
+         end if
+      end if
+      if lang is "French" then
+         if field "kids2" is 1 then 
+            put "un enfant" into mykidsstring
+            put "notre enfant" into mykidsour --| added 20/2
+         else
+            put field "kids2" && "enfants" into mykidsstring
+            put "nos enfants" into mykidsour --| added 20/2
+         end if
+      end if
+      if lang is "Italian" then
+         if field "kids2" is 1 then
+            if random(2) is 1 then 
+               -- equal chances of having a son or a daughter; no universal equivalent
+               put "un figlio" into mykidsstring
+               put "nostro figlio" into mykidsour --| 20/2
+            else
+               put "una figlia" into mykidsstring
+               put "nostra figlia" into mykidsour -- | 20/2
+            end if
+         else
+            put field "kids2" && "di figli" into mykidsstring
+            put "i nostri figli" into mykidsour --|20/2
+         end if
+      end if
+      -- which template to use?
+      -- Step 1: 1 out of 6
+      put random(6) into tnum1
+      put random(6) into tnum2
+      repeat while (tnum1 is tnum2) or (tnum1=1 and tnum2=2) or (tnum1=3 and tnum2=4) or (tnum1=5 and tnum2=6) or (tnum1=2 and tnum2=1) or (tnum1=4 and tnum2=3) or (tnum1=6 and tnum2=5)
+         put random(6) into tnum2 -- keep trying until it is different and acceptable
+      end repeat
+      -- cut here the "put everything together part", no need to do this again
+      if lang is "German" then
+         do field("T"&template2) on card "Templates DE"
+      end if
+      if lang is "French" then
+         do field("T"&template2) on card "Templates FR"
+      end if
+      if lang is "Italian" then
+         do field("T"&template2) on card "Templates IT"
+      end if
+      put themessage into field "outmessage2"
+   end if
 end mouseUp
