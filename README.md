@@ -29,4 +29,4 @@ There follow three cards with the ["Templates"], in German (DE), Italian (IT), a
 
 ### Known Bugs
 
-There are two known bugs in the code, as described above. First, we do not record age as a separate column in the spreadsheet. This infomation can be extracted (using a simple regex) from the message sent. Second, we do not generate a "Used?" column for income. This means we are unable to record whether income was declared, though it is very rare to ask for the income at this stage of the application process.
+There are two known bugs in the code, as described above. First, we do not record age as a separate column in the spreadsheet. This infomation can be extracted (using a simple regex) from the message sent. Second, we do not generate a "Used?" column for income. This means we are unable to record whether income was declared, though it is very rare to ask for the income at this stage of the application process, and in none of the applications was it asked without also asking for the name of the employer (which we did not generate, hence we skipped the property anyway). This is why we managed not to spot for very long.
