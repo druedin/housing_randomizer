@@ -26,3 +26,7 @@ The card ["Addresses"] contains 6 addresses, two each in each of the three langu
 The card ["Default messages"] contains the default messages to be sent when indicated. We have adapted a default message from Comparis.ch, but for the French version a female and a male variant were necessary.
 
 There follow three cards with the ["Templates"], in German (DE), Italian (IT), and French (FR). We used 36 templates for each language. Each template exists for male and female applicants for linguistic reasons, although the two can be equivalent. We also have templates for single applicants, applicants living as coples, and for families (which children). There are two templates each in a neutral (T1, T2), a negative (T3, T4), and a positive (T5, T6) language. The contents of the text fields is LiveCode code that produces the messages on the basis of variables defined in the "generate" button. Some of the variables come in several forms to allow for natural sentences and natural flow. For this reasons, some of the templates include optional "ands" as variables, too.
+
+### Known Bugs
+
+There are two known bugs in the code, as described above. First, we do not record age as a separate column in the spreadsheet. This infomation can be extracted (using a simple regex) from the message sent. Second, we do not generate a "Used?" column for income. This means we are unable to record whether income was declared, though it is very rare to ask for the income at this stage of the application process.
